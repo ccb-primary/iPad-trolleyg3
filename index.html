@@ -81,7 +81,7 @@
     <div id="loginModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100">
             <h3 class="text-lg font-bold text-slate-800 mb-2">Teacher Login</h3>
-            <p class="text-xs text-slate-500 mb-4">Select your profile and enter your PIN (Default: 1234, Admin: 9999).</p>
+            <p class="text-xs text-slate-500 mb-4">Select your profile and enter your 4-digit PIN.</p>
             <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Select Profile</label>
@@ -166,7 +166,7 @@
 
             <!-- Tab Buttons -->
             <div class="flex gap-2 mb-4 border-b pb-2">
-                <button id="adminTabStaffBtn" onclick="switchAdminTab('staff')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800">Manage Staff</button>
+                <button id="adminTabStaffBtn" onclick="switchAdminTab('staff')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800">Manage Staff & PINs</button>
                 <button id="adminTabHolidaysBtn" onclick="switchAdminTab('holidays')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200">Manage Holidays</button>
             </div>
 
@@ -259,10 +259,11 @@
             const container = document.getElementById('authContainer');
             if (loggedInUser) {
                 container.innerHTML = `
-                    <div class="bg-brand-green-dark px-3 py-1.5 rounded-lg flex items-center gap-2 border border-emerald-400/30">
+                    <button onclick="changeOwnPin()" class="bg-brand-green-dark px-3 py-1.5 rounded-lg flex items-center gap-2 border border-emerald-400/30 hover:bg-emerald-800 transition" title="Click to Change PIN">
                         <i class="fa-solid fa-user-circle text-emerald-200"></i>
                         <span class="text-xs font-semibold text-white">${loggedInUser.class}: ${loggedInUser.name}</span>
-                    </div>
+                        <i class="fa-solid fa-key text-[10px] text-emerald-300 ml-1"></i>
+                    </button>
                     ${loggedInUser.isAdmin ? `<button onclick="openAdminModal()" class="px-3 py-1.5 text-xs bg-amber-500 hover:bg-amber-400 text-slate-900 rounded-lg font-bold transition"><i class="fa-solid fa-shield-halved mr-1"></i> Admin Panel</button>` : ''}
                     <button onclick="handleLogout()" class="px-3 py-1.5 text-xs bg-white/10 hover:bg-white/20 text-white rounded-lg transition font-medium border border-white/20"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
                 `;
@@ -270,6 +271,21 @@
                 container.innerHTML = `
                     <button onclick="openLoginModal()" class="px-4 py-1.5 text-xs bg-white text-emerald-800 hover:bg-emerald-50 font-bold rounded-lg transition"><i class="fa-solid fa-right-to-bracket mr-1"></i> Login</button>
                 `;
+            }
+        }
+
+        function changeOwnPin() {
+            const newPin = prompt(`Change PIN for ${loggedInUser.name} (4 digits):`);
+            if (newPin && newPin.length === 4 && /^\d+$/.test(newPin)) {
+                const target = teachers.find(t => t.id === loggedInUser.id);
+                if (target) {
+                    target.pin = newPin;
+                    loggedInUser.pin = newPin;
+                    saveTeachers();
+                    alert('PIN updated successfully!');
+                }
+            } else if (newPin) {
+                alert('PIN must be exactly 4 digits.');
             }
         }
 
@@ -294,7 +310,7 @@
                 renderAuthBar();
                 renderTimetable();
             } else {
-                alert('Incorrect PIN. Default PIN is 1234, Admin PIN is 9999.');
+                alert('Incorrect PIN.');
             }
         }
 
@@ -348,12 +364,12 @@
 
                         row += `<td class="p-2 border-r border-slate-200 align-top h-20">`;
                         if (booking) {
-                            const isOwner = loggedInUser && (booking.teacherId === loggedInUser.id || loggedInUser.isAdmin);
+                            const canDelete = loggedInUser && (booking.teacherId === loggedInUser.id || loggedInUser.isAdmin);
                             row += `
-                                <div class="p-2 rounded-lg ${isOwner ? 'bg-emerald-50 border border-emerald-300 text-emerald-900' : 'bg-slate-100 border border-slate-200 text-slate-700'} text-xs">
+                                <div class="p-2 rounded-lg ${canDelete ? 'bg-emerald-50 border border-emerald-300 text-emerald-900' : 'bg-slate-100 border border-slate-200 text-slate-700'} text-xs">
                                     <div class="font-bold flex justify-between items-center">
                                         <span>${booking.teacherName}</span>
-                                        ${isOwner ? `<button onclick="cancelBooking('${slotKey}')" class="text-red-500 hover:text-red-700 font-bold ml-1">✕</button>` : `<i class="fa-solid fa-lock text-[10px] text-slate-400"></i>`}
+                                        ${canDelete ? `<button onclick="cancelBooking('${slotKey}')" class="text-red-500 hover:text-red-700 font-bold ml-1" title="Cancel Booking">✕</button>` : `<i class="fa-solid fa-lock text-[10px] text-slate-400" title="Locked by another teacher"></i>`}
                                     </div>
                                     <div class="text-[11px] text-emerald-700 font-semibold mt-1">${booking.class} - ${booking.activity}</div>
                                     ${booking.isRecurring ? `<div class="text-[9px] text-emerald-600 font-medium mt-0.5"><i class="fa-solid fa-repeat"></i> Recurring</div>` : ''}
@@ -494,7 +510,21 @@
         }
 
         function cancelBooking(slotKey) {
+            const booking = bookings[slotKey];
+            if (!booking) return;
+
+            if (!loggedInUser) {
+                alert('Please log in first.');
+                return;
+            }
+
+            if (booking.teacherId !== loggedInUser.id && !loggedInUser.isAdmin) {
+                alert('You can only cancel your own bookings.');
+                return;
+            }
+
             if (!confirm('Are you sure you want to cancel this booking?')) return;
+
             if (db) {
                 db.ref('bookings/' + slotKey).remove();
             } else {
@@ -515,10 +545,35 @@
             const list = document.getElementById('adminStaffList');
             list.innerHTML = teachers.map(t => `
                 <div class="flex items-center justify-between p-2 bg-slate-50 border rounded text-xs">
-                    <div><span class="font-bold">${t.name}</span> (${t.class}) — PIN: <span class="font-mono bg-slate-200 px-1 rounded">${t.pin}</span></div>
-                    ${!t.isAdmin ? `<button onclick="deleteTeacher('${t.id}')" class="text-red-500 hover:text-red-700 font-bold">Remove</button>` : '<span class="text-amber-600 font-bold">Admin</span>'}
+                    <div><span class="font-bold">${t.name}</span> (${t.class})</div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="resetTeacherPin('${t.id}')" class="text-xs px-2 py-1 bg-slate-200 hover:bg-slate-300 rounded font-semibold text-slate-700">Reset PIN</button>
+                        ${!t.isAdmin ? `<button onclick="deleteTeacher('${t.id}')" class="text-red-500 hover:text-red-700 font-bold">Remove</button>` : '<span class="text-amber-600 font-bold">Admin</span>'}
+                    </div>
                 </div>
             `).join('');
+        }
+
+        function resetTeacherPin(id) {
+            const teacher = teachers.find(t => t.id === id);
+            if (!teacher) return;
+            const newPin = prompt(`Enter new 4-digit PIN for ${teacher.name}:`);
+            if (newPin && newPin.length === 4 && /^\d+$/.test(newPin)) {
+                teacher.pin = newPin;
+                saveTeachers();
+                alert(`PIN updated for ${teacher.name}`);
+            } else if (newPin) {
+                alert('PIN must be exactly 4 digits.');
+            }
+        }
+
+        function saveTeachers() {
+            if (db) {
+                db.ref('teachers').set(teachers);
+            } else {
+                localStorage.setItem('g3_teachers', JSON.stringify(teachers));
+            }
+            renderAdminStaffList();
         }
 
         function addNewTeacher() {
@@ -530,18 +585,16 @@
 
             const id = 'T_' + Date.now();
             teachers.push({ id, name, class: cls, pin });
-            localStorage.setItem('g3_teachers', JSON.stringify(teachers));
+            saveTeachers();
             
             document.getElementById('newTeacherName').value = '';
             document.getElementById('newTeacherClass').value = '';
             document.getElementById('newTeacherPin').value = '';
-            renderAdminStaffList();
         }
 
         function deleteTeacher(id) {
             teachers = teachers.filter(t => t.id !== id);
-            localStorage.setItem('g3_teachers', JSON.stringify(teachers));
-            renderAdminStaffList();
+            saveTeachers();
         }
 
         function closeModal(id) {
@@ -580,6 +633,9 @@
                         db.ref('holidays').on('value', (snapshot) => {
                             holidays = snapshot.val() || {};
                             renderTimetable();
+                        });
+                        db.ref('teachers').on('value', (snapshot) => {
+                            if (snapshot.val()) teachers = snapshot.val();
                         });
                         document.getElementById('firebaseStatusText').innerText = 'Firebase Connected';
                         document.getElementById('firebaseStatusBtn').className = 'px-3 py-1.5 rounded-full text-xs font-semibold bg-white/20 text-white border border-white/30 flex items-center gap-2';
