@@ -109,6 +109,7 @@
             </h3>
             <form id="bookingForm" onsubmit="handleBookingSubmit(event)">
                 <input type="hidden" id="bookingDay">
+                <input type="hidden" id="bookingDateStr">
                 <input type="hidden" id="bookingPeriod">
                 <div class="space-y-4">
                     <div>
@@ -156,7 +157,7 @@
         </div>
     </div>
 
-    <!-- Admin Manage Staff & Holidays Modal -->
+    <!-- Admin Console Modal -->
     <div id="adminModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4 border-b pb-3">
@@ -233,15 +234,15 @@
         let db = null;
 
         const periods = [
-            { id: 'P1', label: 'Period 1' },
-            { id: 'P2', label: 'Period 2' },
-            { id: 'P3', label: 'Period 3' },
-            { id: 'P4', label: 'Period 4' },
-            { id: 'P5', label: 'Period 5' },
-            { id: 'P6', label: 'Period 6' },
-            { id: 'P7', label: 'Period 7' },
-            { id: 'P8m', label: 'Period 8m' },
-            { id: 'P8w', label: 'Period 8w' }
+            { id: 'p1', label: 'Period 1' },
+            { id: 'p2', label: 'Period 2' },
+            { id: 'p3', label: 'Period 3' },
+            { id: 'p4', label: 'Period 4' },
+            { id: 'p5', label: 'Period 5' },
+            { id: 'p6', label: 'Period 6' },
+            { id: 'p7', label: 'Period 7' },
+            { id: 'p8m', label: 'Period 8m' },
+            { id: 'p8w', label: 'Period 8w' }
         ];
 
         const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -259,23 +260,22 @@
                 }
                 db = firebase.database();
 
-                // Isolated under /ipad_trolley_g3/ to avoid mixing with Exploratorium Room bookings
+                // Clear outdated keys from local storage
+                localStorage.removeItem('g3_bookings');
+
                 db.ref('ipad_trolley_g3/bookings').on('value', (snapshot) => {
                     bookings = snapshot.val() || {};
-                    localStorage.setItem('g3_bookings', JSON.stringify(bookings));
                     renderTimetable();
                 });
 
                 db.ref('ipad_trolley_g3/holidays').on('value', (snapshot) => {
                     holidays = snapshot.val() || {};
-                    localStorage.setItem('g3_holidays', JSON.stringify(holidays));
                     renderTimetable();
                 });
 
                 db.ref('ipad_trolley_g3/teachers').on('value', (snapshot) => {
                     if (snapshot.val()) {
                         teachers = snapshot.val();
-                        localStorage.setItem('g3_teachers', JSON.stringify(teachers));
                     }
                 });
 
@@ -361,12 +361,14 @@
             const monday = new Date(curr);
             monday.setDate(curr.getDate() + distanceToMon);
 
-            return days.map((_, i) => {
+            return days.map((dayName, i) => {
                 const d = new Date(monday);
                 d.setDate(monday.getDate() + i);
+                const iso = d.toISOString().split('T')[0];
                 return {
+                    dayName: dayName,
                     dateStr: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                    isoDate: d.toISOString().split('T')[0]
+                    isoDate: iso
                 };
             });
         }
@@ -377,14 +379,13 @@
             tbody.innerHTML = '';
             const weekDates = getWeekDates(currentWeekOffset);
 
-            days.forEach((day, index) => {
-                const dateObj = weekDates[index];
+            weekDates.forEach((dateObj) => {
                 const holiday = holidays[dateObj.isoDate];
 
                 let row = `<tr class="hover:bg-slate-50/50 border-b border-slate-200">`;
                 row += `
                     <td class="p-3 font-semibold text-slate-700 bg-slate-50 border-r border-slate-200 align-top">
-                        <div class="font-bold text-slate-800 text-sm">${day}</div>
+                        <div class="font-bold text-slate-800 text-sm">${dateObj.dayName}</div>
                         <div class="text-[11px] text-emerald-700 font-medium">${dateObj.dateStr}</div>
                     </td>
                 `;
@@ -397,7 +398,8 @@
                     `;
                 } else {
                     periods.forEach(period => {
-                        const slotKey = `${day}_${period.id}_W${currentWeekOffset}`;
+                        // Key Format matching explicit ISO dates: e.g., 2026-10-28_Wednesday_p4
+                        const slotKey = `${dateObj.isoDate}_${dateObj.dayName}_${period.id}`;
                         const booking = bookings[slotKey];
 
                         row += `<td class="p-2 border-r border-slate-200 align-top h-20">`;
@@ -415,7 +417,7 @@
                             `;
                         } else {
                             row += `
-                                <button onclick="openBookingModal('${day}', '${period.id}')" class="w-full h-14 border border-dashed border-slate-300 rounded-lg text-emerald-600 font-semibold text-xs hover:bg-emerald-50 hover:border-emerald-300 transition flex items-center justify-center gap-1">
+                                <button onclick="openBookingModal('${dateObj.dayName}', '${dateObj.isoDate}', '${period.id}')" class="w-full h-14 border border-dashed border-slate-300 rounded-lg text-emerald-600 font-semibold text-xs hover:bg-emerald-50 hover:border-emerald-300 transition flex items-center justify-center gap-1">
                                     + Book
                                 </button>
                             `;
@@ -489,13 +491,14 @@
             document.getElementById('recurringWeeksContainer').classList.toggle('hidden', !isChecked);
         }
 
-        function openBookingModal(day, periodId) {
+        function openBookingModal(dayName, isoDate, periodId) {
             if (!loggedInUser) {
                 alert('Please log in first to create a reservation.');
                 openLoginModal();
                 return;
             }
-            document.getElementById('bookingDay').value = day;
+            document.getElementById('bookingDay').value = dayName;
+            document.getElementById('bookingDateStr').value = isoDate;
             document.getElementById('bookingPeriod').value = periodId;
             document.getElementById('formTeacherName').value = loggedInUser.name;
             document.getElementById('formActivity').value = '';
@@ -513,14 +516,19 @@
 
         function handleBookingSubmit(e) {
             e.preventDefault();
-            const day = document.getElementById('bookingDay').value;
+            const dayName = document.getElementById('bookingDay').value;
+            const baseIsoDate = document.getElementById('bookingDateStr').value;
             const periodId = document.getElementById('bookingPeriod').value;
             const isRecurring = document.getElementById('formRecurringCheck').checked;
             const weeksCount = isRecurring ? parseInt(document.getElementById('formRecurringWeeks').value) : 1;
 
+            const baseDate = new Date(baseIsoDate + 'T00:00:00');
+
             for (let w = 0; w < weeksCount; w++) {
-                const targetWeekOffset = currentWeekOffset + w;
-                const slotKey = `${day}_${periodId}_W${targetWeekOffset}`;
+                const targetDate = new Date(baseDate);
+                targetDate.setDate(baseDate.getDate() + (w * 7));
+                const iso = targetDate.toISOString().split('T')[0];
+                const slotKey = `${iso}_${dayName}_${periodId}`;
 
                 if (w > 0 && bookings[slotKey]) continue;
 
@@ -529,7 +537,8 @@
                     teacherName: loggedInUser.name,
                     class: document.getElementById('formClassSelect').value,
                     activity: document.getElementById('formActivity').value,
-                    isRecurring: isRecurring
+                    isRecurring: isRecurring,
+                    date: iso
                 };
 
                 if (db) {
