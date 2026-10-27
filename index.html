@@ -259,19 +259,20 @@
                 }
                 db = firebase.database();
 
-                db.ref('bookings').on('value', (snapshot) => {
+                // Isolated under /ipad_trolley_g3/ to avoid mixing with Exploratorium Room bookings
+                db.ref('ipad_trolley_g3/bookings').on('value', (snapshot) => {
                     bookings = snapshot.val() || {};
                     localStorage.setItem('g3_bookings', JSON.stringify(bookings));
                     renderTimetable();
                 });
 
-                db.ref('holidays').on('value', (snapshot) => {
+                db.ref('ipad_trolley_g3/holidays').on('value', (snapshot) => {
                     holidays = snapshot.val() || {};
                     localStorage.setItem('g3_holidays', JSON.stringify(holidays));
                     renderTimetable();
                 });
 
-                db.ref('teachers').on('value', (snapshot) => {
+                db.ref('ipad_trolley_g3/teachers').on('value', (snapshot) => {
                     if (snapshot.val()) {
                         teachers = snapshot.val();
                         localStorage.setItem('g3_teachers', JSON.stringify(teachers));
@@ -355,7 +356,7 @@
 
         function getWeekDates(offset) {
             const curr = new Date();
-            const dayOfWeek = curr.getDay(); // 0 is Sun, 1 is Mon
+            const dayOfWeek = curr.getDay();
             const distanceToMon = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek) + (offset * 7);
             const monday = new Date(curr);
             monday.setDate(curr.getDate() + distanceToMon);
@@ -446,7 +447,7 @@
             holidays[dateVal] = { title: titleVal };
 
             if (db) {
-                db.ref('holidays').set(holidays);
+                db.ref('ipad_trolley_g3/holidays').set(holidays);
             } else {
                 localStorage.setItem('g3_holidays', JSON.stringify(holidays));
                 renderTimetable();
@@ -460,7 +461,7 @@
         function removeAdminHoliday(dateVal) {
             delete holidays[dateVal];
             if (db) {
-                db.ref('holidays').set(holidays);
+                db.ref('ipad_trolley_g3/holidays').set(holidays);
             } else {
                 localStorage.setItem('g3_holidays', JSON.stringify(holidays));
                 renderTimetable();
@@ -532,7 +533,7 @@
                 };
 
                 if (db) {
-                    db.ref('bookings/' + slotKey).set(newBooking);
+                    db.ref('ipad_trolley_g3/bookings/' + slotKey).set(newBooking);
                 } else {
                     bookings[slotKey] = newBooking;
                 }
@@ -563,7 +564,7 @@
             if (!confirm('Are you sure you want to cancel this booking?')) return;
 
             if (db) {
-                db.ref('bookings/' + slotKey).remove();
+                db.ref('ipad_trolley_g3/bookings/' + slotKey).remove();
             } else {
                 delete bookings[slotKey];
                 localStorage.setItem('g3_bookings', JSON.stringify(bookings));
@@ -606,7 +607,7 @@
 
         function saveTeachers() {
             if (db) {
-                db.ref('teachers').set(teachers);
+                db.ref('ipad_trolley_g3/teachers').set(teachers);
             } else {
                 localStorage.setItem('g3_teachers', JSON.stringify(teachers));
             }
