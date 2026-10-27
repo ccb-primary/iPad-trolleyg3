@@ -11,40 +11,37 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
-        .bg-navy-900 { background-color: #1e1b4b; }
-        .bg-navy-800 { background-color: #2e2a72; }
+        .bg-brand-green { background-color: #059669; }
+        .bg-brand-green-dark { background-color: #047857; }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen">
-    <header class="bg-navy-900 text-white shadow-md">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-brand-green text-white shadow-md">
+        <div class="w-full px-6 py-3 flex flex-wrap justify-between items-center gap-4">
             <div>
                 <h1 class="text-xl font-bold tracking-tight">The Exploratorium: iPad Trolley Booking System</h1>
-                <p class="text-xs text-slate-300">Grade 3 iPad Reservation Matrix & Synchronization</p>
+                <p class="text-xs text-emerald-100">Grade 3 iPad Reservation Matrix & Synchronization</p>
             </div>
             <div class="flex items-center gap-3">
-                <button id="firebaseStatusBtn" onclick="openFirebaseModal()" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-400/30 flex items-center gap-2 hover:bg-amber-500/30 transition">
+                <button id="firebaseStatusBtn" onclick="openFirebaseModal()" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-white/10 text-emerald-100 border border-white/20 flex items-center gap-2 hover:bg-white/20 transition">
                     <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
                     <span id="firebaseStatusText">Demo Mode (Local)</span>
                 </button>
-                <div class="bg-navy-800 px-3 py-1.5 rounded-lg flex items-center gap-2 border border-slate-700">
-                    <i class="fa-solid fa-user-circle text-indigo-400"></i>
-                    <span id="currentTeacherLabel" class="text-xs font-medium">3A: Fabián Otero</span>
-                    <select id="teacherSelect" onchange="switchTeacher(this.value)" class="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer">
-                    </select>
+                <div id="authContainer" class="flex items-center gap-2">
+                    <!-- Auth UI rendered via JS -->
                 </div>
-                <button onclick="openStaffModal()" class="px-3 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition font-medium">
-                    <i class="fa-solid fa-users-gear mr-1"></i> Manage Staff
-                </button>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-6">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6 flex flex-wrap justify-between items-center gap-4">
+    <!-- Main Content -->
+    <main class="w-full px-4 py-4 flex-1 flex flex-col">
+        <!-- Controls Bar -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-3 mb-4 flex flex-wrap justify-between items-center gap-4">
             <div class="flex items-center gap-2">
                 <button onclick="changeWeek(-1)" class="px-3 py-1.5 text-xs font-medium border border-slate-300 rounded-lg hover:bg-slate-50 transition">&lt; Prev Week</button>
-                <button onclick="resetToCurrentWeek()" class="px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition">Current Week</button>
+                <button onclick="resetToCurrentWeek()" class="px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition">Current Week</button>
                 <button onclick="changeWeek(1)" class="px-3 py-1.5 text-xs font-medium border border-slate-300 rounded-lg hover:bg-slate-50 transition">Next Week &gt;</button>
                 <span id="weekDisplayBadge" class="ml-2 px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 rounded-lg border border-slate-200"></span>
             </div>
@@ -55,21 +52,22 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse min-w-[900px]">
+        <!-- Timetable Grid -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col">
+            <div class="overflow-x-auto h-full flex-1">
+                <table class="w-full text-left border-collapse min-w-[1100px] h-full">
                     <thead>
                         <tr class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-600">
-                            <th class="p-3 w-32 border-r border-slate-200">Day</th>
-                            <th class="p-3 border-r border-slate-200">Period 1<br><span class="text-[10px] text-slate-400 font-normal">08:15-09:00</span></th>
-                            <th class="p-3 border-r border-slate-200">Period 2<br><span class="text-[10px] text-slate-400 font-normal">09:00-09:45</span></th>
-                            <th class="p-3 border-r border-slate-200">Period 3<br><span class="text-[10px] text-slate-400 font-normal">10:05-10:50</span></th>
-                            <th class="p-3 border-r border-slate-200">Period 4<br><span class="text-[10px] text-slate-400 font-normal">10:50-11:35</span></th>
-                            <th class="p-3 border-r border-slate-200">Period 5<br><span class="text-[10px] text-slate-400 font-normal">12:30-13:15</span></th>
-                            <th class="p-3 border-r border-slate-200">Period 6<br><span class="text-[10px] text-slate-400 font-normal">13:15-14:00</span></th>
-                            <th class="p-3 border-r border-slate-200">Period 7<br><span class="text-[10px] text-slate-400 font-normal">14:20-15:05</span></th>
-                            <th class="p-3 border-r border-slate-200">Period 8m<br><span class="text-[10px] text-slate-400 font-normal">15:05-15:35</span></th>
-                            <th class="p-3">Period 8w<br><span class="text-[10px] text-slate-400 font-normal">15:35-16:05</span></th>
+                            <th class="p-3 w-36 border-r border-slate-200">Day</th>
+                            <th class="p-3 border-r border-slate-200 w-[10%]">Period 1<br><span class="text-[10px] text-slate-400 font-normal">08:15-09:00</span></th>
+                            <th class="p-3 border-r border-slate-200 w-[10%]">Period 2<br><span class="text-[10px] text-slate-400 font-normal">09:00-09:45</span></th>
+                            <th class="p-3 border-r border-slate-200 w-[10%]">Period 3<br><span class="text-[10px] text-slate-400 font-normal">10:05-10:50</span></th>
+                            <th class="p-3 border-r border-slate-200 w-[10%]">Period 4<br><span class="text-[10px] text-slate-400 font-normal">10:50-11:35</span></th>
+                            <th class="p-3 border-r border-slate-200 w-[10%]">Period 5<br><span class="text-[10px] text-slate-400 font-normal">12:30-13:15</span></th>
+                            <th class="p-3 border-r border-slate-200 w-[10%]">Period 6<br><span class="text-[10px] text-slate-400 font-normal">13:15-14:00</span></th>
+                            <th class="p-3 border-r border-slate-200 w-[10%]">Period 7<br><span class="text-[10px] text-slate-400 font-normal">14:20-15:05</span></th>
+                            <th class="p-3 border-r border-slate-200 w-[10%]">Period 8m<br><span class="text-[10px] text-slate-400 font-normal">15:05-15:35</span></th>
+                            <th class="p-3 w-[10%]">Period 8w<br><span class="text-[10px] text-slate-400 font-normal">15:35-16:05</span></th>
                         </tr>
                     </thead>
                     <tbody id="timetableBody" class="divide-y divide-slate-200 text-xs">
@@ -79,11 +77,34 @@
         </div>
     </main>
 
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100">
+            <h3 class="text-lg font-bold text-slate-800 mb-2">Teacher Login</h3>
+            <p class="text-xs text-slate-500 mb-4">Select your profile and enter your PIN (Default: 1234, Admin: 9999).</p>
+            <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Select Profile</label>
+                    <select id="loginTeacherSelect" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">4-Digit PIN</label>
+                    <input type="password" id="loginPin" required maxlength="4" placeholder="••••" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono text-center tracking-widest focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closeModal('loginModal')" class="w-1/2 py-2 text-xs font-semibold text-slate-600 border border-slate-300 rounded-lg">Cancel</button>
+                    <button type="submit" class="w-1/2 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg">Login</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Booking Modal -->
     <div id="bookingModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100">
             <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center justify-between">
-                <span id="modalTitle">Reserve iPad Trolley</span>
+                <span>Reserve iPad Trolley</span>
                 <button onclick="closeModal('bookingModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
             </h3>
             <form id="bookingForm" onsubmit="handleBookingSubmit(event)">
@@ -96,23 +117,50 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Target Grade 3 Class</label>
-                        <select id="formClassSelect" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                            <option value="3A">3A - Fabián Otero</option>
-                            <option value="3B">3B - Viviana Rodríguez</option>
-                            <option value="3C">3C - Carol Wangison</option>
-                            <option value="3D">3D - Andry Martínez</option>
+                        <select id="formClassSelect" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="3A">3A</option>
+                            <option value="3B">3B</option>
+                            <option value="3C">3C</option>
+                            <option value="3D">3D</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Activity / Lesson Description</label>
-                        <input type="text" id="formActivity" required placeholder="e.g., Scratch Jr Coding, Kahoot Quiz" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Activity Description</label>
+                        <input type="text" id="formActivity" required placeholder="e.g., Scratch Coding, Kahoot Quiz" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
                     </div>
                 </div>
                 <div class="mt-6 flex gap-3">
-                    <button type="button" onclick="closeModal('bookingModal')" class="w-1/2 py-2 text-xs font-semibold text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-50">Cancel</button>
-                    <button type="submit" class="w-1/2 py-2 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-500">Confirm Booking</button>
+                    <button type="button" onclick="closeModal('bookingModal')" class="w-1/2 py-2 text-xs font-semibold text-slate-600 border border-slate-300 rounded-lg">Cancel</button>
+                    <button type="submit" class="w-1/2 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg">Confirm Booking</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Admin Manage Staff Modal -->
+    <div id="adminModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-800">Admin Staff Management</h3>
+                <button onclick="closeModal('adminModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div class="border-b pb-4">
+                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Add New Teacher</h4>
+                    <div class="grid grid-cols-3 gap-2">
+                        <input type="text" id="newTeacherName" placeholder="Name" class="px-2 py-1.5 border rounded text-xs">
+                        <input type="text" id="newTeacherClass" placeholder="Class (e.g. 3E)" class="px-2 py-1.5 border rounded text-xs">
+                        <input type="text" id="newTeacherPin" placeholder="PIN" maxlength="4" class="px-2 py-1.5 border rounded text-xs">
+                    </div>
+                    <button onclick="addNewTeacher()" class="mt-2 w-full py-1.5 bg-emerald-600 text-white rounded text-xs font-semibold hover:bg-emerald-500">+ Add Teacher</button>
+                </div>
+                <div>
+                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Current Staff List</h4>
+                    <div id="adminStaffList" class="space-y-2">
+                        <!-- Rendered via JS -->
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -120,26 +168,27 @@
     <div id="firebaseModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-100">
             <h3 class="text-lg font-bold text-slate-800 mb-2">Connect Firebase Database</h3>
-            <p class="text-xs text-slate-500 mb-4">Paste your Firebase configuration object below to enable live sync across all teacher devices.</p>
-            <textarea id="firebaseConfigInput" rows="8" placeholder="const firebaseConfig = { ... };" class="w-full p-3 font-mono text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+            <p class="text-xs text-slate-500 mb-4">Paste your Firebase configuration below to sync devices.</p>
+            <textarea id="firebaseConfigInput" rows="7" placeholder="const firebaseConfig = { ... };" class="w-full p-3 font-mono text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
             <div class="mt-4 flex gap-3">
                 <button onclick="closeModal('firebaseModal')" class="w-1/2 py-2 text-xs font-semibold text-slate-600 border border-slate-300 rounded-lg">Cancel</button>
-                <button onclick="saveFirebaseConfig()" class="w-1/2 py-2 text-xs font-semibold text-white bg-indigo-600 rounded-lg">Save & Sync Cloud</button>
+                <button onclick="saveFirebaseConfig()" class="w-1/2 py-2 text-xs font-semibold text-white bg-emerald-600 rounded-lg">Save & Sync Cloud</button>
             </div>
         </div>
     </div>
 
     <script>
         let defaultTeachers = [
-            { id: '3A', name: 'Fabián Otero', class: '3A' },
-            { id: '3B', name: 'Viviana Rodríguez', class: '3B' },
-            { id: '3C', name: 'Carol Wangison', class: '3C' },
-            { id: '3D', name: 'Andry Martínez', class: '3D' },
-            { id: 'SPAN', name: 'Diana Hernández', class: 'Spanish' }
+            { id: '3A', name: 'Fabián Otero', class: '3A', pin: '1234' },
+            { id: '3B', name: 'Viviana Rodríguez', class: '3B', pin: '1234' },
+            { id: '3C', name: 'Carol Wangison', class: '3C', pin: '1234' },
+            { id: '3D', name: 'Andry Martínez', class: '3D', pin: '1234' },
+            { id: 'SPAN', name: 'Diana Hernández', class: 'Spanish', pin: '1234' },
+            { id: 'ADMIN', name: 'System Admin', class: 'Admin', pin: '9999', isAdmin: true }
         ];
 
         let teachers = JSON.parse(localStorage.getItem('g3_teachers')) || defaultTeachers;
-        let currentTeacher = teachers[0];
+        let loggedInUser = JSON.parse(localStorage.getItem('g3_logged_user')) || null;
         let currentWeekOffset = 0;
         let bookings = {};
         let db = null;
@@ -159,51 +208,105 @@
         const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
         function initApp() {
-            renderTeacherDropdown();
+            renderAuthBar();
             loadSavedFirebaseConfig();
             renderTimetable();
         }
 
-        function renderTeacherDropdown() {
-            const select = document.getElementById('teacherSelect');
-            select.innerHTML = teachers.map(t => `<option value="${t.id}">${t.name} (${t.class})</option>`).join('');
-            select.value = currentTeacher.id;
-            document.getElementById('currentTeacherLabel').innerText = `${currentTeacher.class}: ${currentTeacher.name}`;
+        function renderAuthBar() {
+            const container = document.getElementById('authContainer');
+            if (loggedInUser) {
+                container.innerHTML = `
+                    <div class="bg-brand-green-dark px-3 py-1.5 rounded-lg flex items-center gap-2 border border-emerald-400/30">
+                        <i class="fa-solid fa-user-circle text-emerald-200"></i>
+                        <span class="text-xs font-semibold text-white">${loggedInUser.class}: ${loggedInUser.name}</span>
+                    </div>
+                    ${loggedInUser.isAdmin ? `<button onclick="openAdminModal()" class="px-3 py-1.5 text-xs bg-amber-500 hover:bg-amber-400 text-slate-900 rounded-lg font-bold transition"><i class="fa-solid fa-shield-halved mr-1"></i> Admin Panel</button>` : ''}
+                    <button onclick="handleLogout()" class="px-3 py-1.5 text-xs bg-white/10 hover:bg-white/20 text-white rounded-lg transition font-medium border border-white/20"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+                `;
+            } else {
+                container.innerHTML = `
+                    <button onclick="openLoginModal()" class="px-4 py-1.5 text-xs bg-white text-emerald-800 hover:bg-emerald-50 font-bold rounded-lg transition"><i class="fa-solid fa-right-to-bracket mr-1"></i> Login</button>
+                `;
+            }
         }
 
-        function switchTeacher(id) {
-            currentTeacher = teachers.find(t => t.id === id) || teachers[0];
-            document.getElementById('currentTeacherLabel').innerText = `${currentTeacher.class}: ${currentTeacher.name}`;
+        function openLoginModal() {
+            const select = document.getElementById('loginTeacherSelect');
+            select.innerHTML = teachers.map(t => `<option value="${t.id}">${t.name} (${t.class})</option>`).join('');
+            document.getElementById('loginPin').value = '';
+            document.getElementById('loginModal').classList.remove('hidden');
+            document.getElementById('loginModal').classList.add('flex');
+        }
+
+        function handleLoginSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('loginTeacherSelect').value;
+            const pin = document.getElementById('loginPin').value;
+            const teacher = teachers.find(t => t.id === id);
+
+            if (teacher && teacher.pin === pin) {
+                loggedInUser = teacher;
+                localStorage.setItem('g3_logged_user', JSON.stringify(loggedInUser));
+                closeModal('loginModal');
+                renderAuthBar();
+                renderTimetable();
+            } else {
+                alert('Incorrect PIN. Default PIN is 1234, Admin PIN is 9999.');
+            }
+        }
+
+        function handleLogout() {
+            loggedInUser = null;
+            localStorage.removeItem('g3_logged_user');
+            renderAuthBar();
             renderTimetable();
+        }
+
+        function getWeekDates(offset) {
+            const curr = new Date();
+            const first = curr.getDate() - curr.getDay() + 1 + (offset * 7);
+            return days.map((_, i) => {
+                const d = new Date(curr.setDate(first + i));
+                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            });
         }
 
         function renderTimetable() {
             const tbody = document.getElementById('timetableBody');
             tbody.innerHTML = '';
+            const weekDates = getWeekDates(currentWeekOffset);
 
-            days.forEach(day => {
-                let row = `<tr class="hover:bg-slate-50/50">`;
-                row += `<td class="p-3 font-semibold text-slate-700 bg-slate-50/50 border-r border-slate-200">${day}</td>`;
+            days.forEach((day, index) => {
+                let row = `<tr class="hover:bg-slate-50/50 h-24">`;
+                row += `
+                    <td class="p-3 font-semibold text-slate-700 bg-slate-50/50 border-r border-slate-200">
+                        <div class="font-bold text-slate-800">${day}</div>
+                        <div class="text-[11px] text-emerald-700 font-medium">${weekDates[index]}</div>
+                    </td>
+                `;
 
                 periods.forEach(period => {
                     const slotKey = `${day}_${period.id}_W${currentWeekOffset}`;
                     const booking = bookings[slotKey];
 
-                    row += `<td class="p-2 border-r border-slate-200 vertical-align-top h-20">`;
+                    row += `<td class="p-2 border-r border-slate-200 vertical-align-top h-full">`;
                     if (booking) {
-                        const isOwner = booking.teacherId === currentTeacher.id;
+                        const isOwner = loggedInUser && (booking.teacherId === loggedInUser.id || loggedInUser.isAdmin);
                         row += `
-                            <div class="p-2 rounded-lg ${isOwner ? 'bg-indigo-50 border border-indigo-200 text-indigo-900' : 'bg-slate-100 border border-slate-200 text-slate-700'} text-xs">
-                                <div class="font-bold flex justify-between items-center">
-                                    <span>${booking.teacherName}</span>
-                                    ${isOwner ? `<button onclick="cancelBooking('${slotKey}')" class="text-red-500 hover:text-red-700 font-bold ml-1">✕</button>` : `<i class="fa-solid fa-lock text-[10px] text-slate-400"></i>`}
+                            <div class="p-2 rounded-lg ${isOwner ? 'bg-emerald-50 border border-emerald-300 text-emerald-900' : 'bg-slate-100 border border-slate-200 text-slate-700'} text-xs h-full flex flex-col justify-between">
+                                <div>
+                                    <div class="font-bold flex justify-between items-center">
+                                        <span>${booking.teacherName}</span>
+                                        ${isOwner ? `<button onclick="cancelBooking('${slotKey}')" class="text-red-500 hover:text-red-700 font-bold ml-1">✕</button>` : `<i class="fa-solid fa-lock text-[10px] text-slate-400"></i>`}
+                                    </div>
+                                    <div class="text-[11px] text-emerald-700 font-semibold mt-0.5">${booking.class} - ${booking.activity}</div>
                                 </div>
-                                <div class="text-[11px] text-indigo-700 font-semibold mt-0.5">${booking.class} - ${booking.activity}</div>
                             </div>
                         `;
                     } else {
                         row += `
-                            <button onclick="openBookingModal('${day}', '${period.id}')" class="w-full h-full border border-dashed border-slate-300 rounded-lg text-emerald-600 font-semibold text-xs hover:bg-emerald-50 hover:border-emerald-300 transition flex items-center justify-center gap-1">
+                            <button onclick="openBookingModal('${day}', '${period.id}')" class="w-full h-full border border-dashed border-slate-300 rounded-lg text-emerald-600 font-semibold text-xs hover:bg-emerald-50 hover:border-emerald-300 transition flex items-center justify-center gap-1 min-h-[60px]">
                                 + Book
                             </button>
                         `;
@@ -214,14 +317,25 @@
                 tbody.innerHTML += row;
             });
 
-            document.getElementById('weekDisplayBadge').innerText = `Week Offset: ${currentWeekOffset === 0 ? 'Current Week' : (currentWeekOffset > 0 ? '+' + currentWeekOffset : currentWeekOffset)}`;
+            document.getElementById('weekDisplayBadge').innerText = `Week: ${weekDates[0]} – ${weekDates[4]}`;
         }
 
         function openBookingModal(day, periodId) {
+            if (!loggedInUser) {
+                alert('Please log in first to create a reservation.');
+                openLoginModal();
+                return;
+            }
             document.getElementById('bookingDay').value = day;
             document.getElementById('bookingPeriod').value = periodId;
-            document.getElementById('formTeacherName').value = currentTeacher.name;
+            document.getElementById('formTeacherName').value = loggedInUser.name;
             document.getElementById('formActivity').value = '';
+            
+            const classSelect = document.getElementById('formClassSelect');
+            if (loggedInUser.class !== 'Spanish' && loggedInUser.class !== 'Admin') {
+                classSelect.value = loggedInUser.class;
+            }
+
             document.getElementById('bookingModal').classList.remove('hidden');
             document.getElementById('bookingModal').classList.add('flex');
         }
@@ -233,8 +347,8 @@
             const slotKey = `${day}_${periodId}_W${currentWeekOffset}`;
 
             const newBooking = {
-                teacherId: currentTeacher.id,
-                teacherName: currentTeacher.name,
+                teacherId: loggedInUser.id,
+                teacherName: loggedInUser.name,
                 class: document.getElementById('formClassSelect').value,
                 activity: document.getElementById('formActivity').value
             };
@@ -261,6 +375,45 @@
             }
         }
 
+        function openAdminModal() {
+            renderAdminStaffList();
+            document.getElementById('adminModal').classList.remove('hidden');
+            document.getElementById('adminModal').classList.add('flex');
+        }
+
+        function renderAdminStaffList() {
+            const list = document.getElementById('adminStaffList');
+            list.innerHTML = teachers.map(t => `
+                <div class="flex items-center justify-between p-2 bg-slate-50 border rounded text-xs">
+                    <div><span class="font-bold">${t.name}</span> (${t.class}) — PIN: <span class="font-mono bg-slate-200 px-1 rounded">${t.pin}</span></div>
+                    ${!t.isAdmin ? `<button onclick="deleteTeacher('${t.id}')" class="text-red-500 hover:text-red-700 font-bold">Remove</button>` : '<span class="text-amber-600 font-bold">Admin</span>'}
+                </div>
+            `).join('');
+        }
+
+        function addNewTeacher() {
+            const name = document.getElementById('newTeacherName').value;
+            const cls = document.getElementById('newTeacherClass').value;
+            const pin = document.getElementById('newTeacherPin').value || '1234';
+
+            if (!name || !cls) return alert('Name and Class are required.');
+
+            const id = 'T_' + Date.now();
+            teachers.push({ id, name, class: cls, pin });
+            localStorage.setItem('g3_teachers', JSON.stringify(teachers));
+            
+            document.getElementById('newTeacherName').value = '';
+            document.getElementById('newTeacherClass').value = '';
+            document.getElementById('newTeacherPin').value = '';
+            renderAdminStaffList();
+        }
+
+        function deleteTeacher(id) {
+            teachers = teachers.filter(t => t.id !== id);
+            localStorage.setItem('g3_teachers', JSON.stringify(teachers));
+            renderAdminStaffList();
+        }
+
         function closeModal(id) {
             document.getElementById(id).classList.add('hidden');
             document.getElementById(id).classList.remove('flex');
@@ -277,7 +430,7 @@
                 localStorage.setItem('g3_firebase_config', raw);
                 location.reload();
             } catch(e) {
-                alert('Invalid Firebase configuration syntax.');
+                alert('Invalid syntax.');
             }
         }
 
@@ -295,7 +448,7 @@
                             renderTimetable();
                         });
                         document.getElementById('firebaseStatusText').innerText = 'Firebase Connected';
-                        document.getElementById('firebaseStatusBtn').className = 'px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center gap-2';
+                        document.getElementById('firebaseStatusBtn').className = 'px-3 py-1.5 rounded-full text-xs font-semibold bg-white/20 text-white border border-white/30 flex items-center gap-2';
                         return;
                     }
                 } catch(e) { console.error(e); }
