@@ -156,14 +156,22 @@
         </div>
     </div>
 
-    <!-- Admin Manage Staff Modal -->
+    <!-- Admin Manage Staff & Holidays Modal -->
     <div id="adminModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-slate-800">Admin Staff Management</h3>
+        <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 class="text-lg font-bold text-slate-800">Admin Console</h3>
                 <button onclick="closeModal('adminModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div class="space-y-4">
+
+            <!-- Tab Buttons -->
+            <div class="flex gap-2 mb-4 border-b pb-2">
+                <button id="adminTabStaffBtn" onclick="switchAdminTab('staff')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800">Manage Staff</button>
+                <button id="adminTabHolidaysBtn" onclick="switchAdminTab('holidays')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200">Manage Holidays</button>
+            </div>
+
+            <!-- Staff Section -->
+            <div id="adminStaffSection" class="space-y-4">
                 <div class="border-b pb-4">
                     <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Add New Teacher</h4>
                     <div class="grid grid-cols-3 gap-2">
@@ -175,9 +183,23 @@
                 </div>
                 <div>
                     <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Current Staff List</h4>
-                    <div id="adminStaffList" class="space-y-2">
-                        <!-- Rendered via JS -->
+                    <div id="adminStaffList" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <!-- Holiday Section -->
+            <div id="adminHolidaysSection" class="space-y-4 hidden">
+                <div class="border-b pb-4">
+                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Add School Holiday / Closure</h4>
+                    <div class="grid grid-cols-3 gap-2">
+                        <input type="date" id="adminHolidayDate" class="px-2 py-1.5 border rounded text-xs">
+                        <input type="text" id="adminHolidayTitle" placeholder="Reason (e.g. Easter Break)" class="col-span-2 px-2 py-1.5 border rounded text-xs">
                     </div>
+                    <button onclick="addAdminHoliday()" class="mt-2 w-full py-1.5 bg-amber-600 text-white rounded text-xs font-semibold hover:bg-amber-500">+ Add Holiday</button>
+                </div>
+                <div>
+                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Scheduled Holidays</h4>
+                    <div id="adminHolidayList" class="space-y-2"></div>
                 </div>
             </div>
         </div>
@@ -287,8 +309,12 @@
             const curr = new Date();
             const first = curr.getDate() - curr.getDay() + 1 + (offset * 7);
             return days.map((_, i) => {
-                const d = new Date(curr.setDate(first + i));
-                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const d = new Date(curr);
+                d.setDate(first + i);
+                return {
+                    dateStr: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                    isoDate: d.toISOString().split('T')[0]
+                };
             });
         }
 
@@ -298,30 +324,21 @@
             const weekDates = getWeekDates(currentWeekOffset);
 
             days.forEach((day, index) => {
-                const holidayKey = `${day}_W${currentWeekOffset}`;
-                const isHoliday = holidays[holidayKey];
+                const dateObj = weekDates[index];
+                const holiday = holidays[dateObj.isoDate];
 
                 let row = `<tr class="hover:bg-slate-50/50 border-b border-slate-200">`;
                 row += `
                     <td class="p-3 font-semibold text-slate-700 bg-slate-50 border-r border-slate-200 align-top">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <div class="font-bold text-slate-800 text-sm">${day}</div>
-                                <div class="text-[11px] text-emerald-700 font-medium">${weekDates[index]}</div>
-                            </div>
-                            ${loggedInUser ? `
-                                <button onclick="toggleHoliday('${holidayKey}')" class="text-[10px] px-1.5 py-0.5 rounded ${isHoliday ? 'bg-amber-100 text-amber-800 font-bold' : 'text-slate-400 hover:text-red-600'}" title="Toggle Holiday">
-                                    <i class="fa-solid fa-umbrella-beach"></i>
-                                </button>
-                            ` : ''}
-                        </div>
+                        <div class="font-bold text-slate-800 text-sm">${day}</div>
+                        <div class="text-[11px] text-emerald-700 font-medium">${dateObj.dateStr}</div>
                     </td>
                 `;
 
-                if (isHoliday) {
+                if (holiday) {
                     row += `
                         <td colspan="${periods.length}" class="p-3 bg-amber-50/80 border-r border-slate-200 text-center font-bold text-amber-800 text-xs tracking-wider uppercase">
-                            <i class="fa-solid fa-umbrella-beach mr-2 text-amber-600"></i> Holiday / School Closure Day
+                            <i class="fa-solid fa-umbrella-beach mr-2 text-amber-600"></i> ${holiday.title || 'Holiday / School Closure Day'}
                         </td>
                     `;
                 } else {
@@ -356,16 +373,24 @@
                 tbody.innerHTML += row;
             });
 
-            document.getElementById('weekDisplayBadge').innerText = `Week: ${weekDates[0]} – ${weekDates[4]}`;
+            document.getElementById('weekDisplayBadge').innerText = `Week: ${weekDates[0].dateStr} – ${weekDates[4].dateStr}`;
         }
 
-        function toggleHoliday(holidayKey) {
-            if (!loggedInUser) return alert('Please log in first.');
-            if (holidays[holidayKey]) {
-                delete holidays[holidayKey];
-            } else {
-                holidays[holidayKey] = true;
-            }
+        function switchAdminTab(tab) {
+            document.getElementById('adminStaffSection').classList.toggle('hidden', tab !== 'staff');
+            document.getElementById('adminHolidaysSection').classList.toggle('hidden', tab !== 'holidays');
+            document.getElementById('adminTabStaffBtn').className = tab === 'staff' ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800' : 'px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200';
+            document.getElementById('adminTabHolidaysBtn').className = tab === 'holidays' ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-100 text-amber-800' : 'px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200';
+            if (tab === 'holidays') renderAdminHolidayList();
+        }
+
+        function addAdminHoliday() {
+            const dateVal = document.getElementById('adminHolidayDate').value;
+            const titleVal = document.getElementById('adminHolidayTitle').value || 'Holiday / School Closure';
+
+            if (!dateVal) return alert('Please select a holiday date.');
+
+            holidays[dateVal] = { title: titleVal };
 
             if (db) {
                 db.ref('holidays').set(holidays);
@@ -373,6 +398,36 @@
                 localStorage.setItem('g3_holidays', JSON.stringify(holidays));
                 renderTimetable();
             }
+
+            document.getElementById('adminHolidayDate').value = '';
+            document.getElementById('adminHolidayTitle').value = '';
+            renderAdminHolidayList();
+        }
+
+        function removeAdminHoliday(dateVal) {
+            delete holidays[dateVal];
+            if (db) {
+                db.ref('holidays').set(holidays);
+            } else {
+                localStorage.setItem('g3_holidays', JSON.stringify(holidays));
+                renderTimetable();
+            }
+            renderAdminHolidayList();
+        }
+
+        function renderAdminHolidayList() {
+            const list = document.getElementById('adminHolidayList');
+            const sortedDates = Object.keys(holidays).sort();
+            if (sortedDates.length === 0) {
+                list.innerHTML = `<p class="text-xs text-slate-400">No holidays scheduled.</p>`;
+                return;
+            }
+            list.innerHTML = sortedDates.map(d => `
+                <div class="flex items-center justify-between p-2 bg-amber-50 border border-amber-200 rounded text-xs">
+                    <div><span class="font-bold text-amber-900">${d}</span> — <span class="text-amber-800">${holidays[d].title}</span></div>
+                    <button onclick="removeAdminHoliday('${d}')" class="text-red-500 hover:text-red-700 font-bold">Remove</button>
+                </div>
+            `).join('');
         }
 
         function toggleRecurringSelect() {
@@ -413,7 +468,6 @@
                 const targetWeekOffset = currentWeekOffset + w;
                 const slotKey = `${day}_${periodId}_W${targetWeekOffset}`;
 
-                // Don't overwrite existing bookings in future weeks
                 if (w > 0 && bookings[slotKey]) continue;
 
                 const newBooking = {
@@ -452,6 +506,7 @@
 
         function openAdminModal() {
             renderAdminStaffList();
+            switchAdminTab('staff');
             document.getElementById('adminModal').classList.remove('hidden');
             document.getElementById('adminModal').classList.add('flex');
         }
